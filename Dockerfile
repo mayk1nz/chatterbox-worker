@@ -3,6 +3,7 @@
 #
 # Base: PyTorch 2.7.1 + CUDA 12.8 (mesmo do omnivoice-worker pra suportar
 # Blackwell + Hopper). Chatterbox roda em torch >= 2.4.
+# cache-buster: v2-torchvision-fix
 FROM pytorch/pytorch:2.7.1-cuda12.8-cudnn9-runtime
 
 WORKDIR /app
