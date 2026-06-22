@@ -18,10 +18,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libsndfile1 ffmpeg git \
     && rm -rf /var/lib/apt/lists/*
 
-# Chatterbox + RunPod handler. --upgrade-strategy=only-if-needed pra nao mexer
-# em torch/torchaudio ja matched pela imagem oficial.
-RUN pip install --no-cache-dir --upgrade-strategy=only-if-needed \
+# Chatterbox + RunPod handler.
+# IMPORTANTE: chatterbox-tts puxa transformers recente que importa torchvision
+# no path do LlamaModel. Se torch/torchvision/torchaudio ficarem desalinhados,
+# `register_fake("torchvision::nms")` falha no boot. Solucao: instala chatterbox
+# normalmente, depois FORÇA reinstall matched do trio torch=2.7.1/tv=0.22.1/ta=2.7.1
+# direto do index oficial PyTorch (cu128) — mesma versão da imagem base.
+RUN pip install --no-cache-dir \
       runpod chatterbox-tts soundfile numpy huggingface_hub
+
+RUN pip install --no-cache-dir --force-reinstall --no-deps \
+      --index-url https://download.pytorch.org/whl/cu128 \
+      torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1
 
 # Pre-baixa pesos (cold start nao precisa baixar). Roda em CPU mode pra evitar
 # need de GPU no build host. Se falhar (modelo precisa CUDA), download cai no
