@@ -25,11 +25,22 @@ T3_MODEL = os.environ.get("T3_MODEL", "v3")
 DEVICE = os.environ.get("DEVICE", "cuda")
 MP3_BITRATE = os.environ.get("MP3_BITRATE", "64k")
 
+import sys, traceback
+print(f"[boot] python={sys.version.split()[0]} torch={torch.__version__} cuda_available={torch.cuda.is_available()}", flush=True)
+if torch.cuda.is_available():
+    print(f"[boot] cuda_device={torch.cuda.get_device_name(0)} mem={torch.cuda.get_device_properties(0).total_memory/1e9:.1f}GB", flush=True)
 print(f"[boot] carregando ChatterboxMultilingualTTS (t3={T3_MODEL}, device={DEVICE}) ...", flush=True)
 _t0 = time.time()
-model = ChatterboxMultilingualTTS.from_pretrained(device=DEVICE, t3_model=T3_MODEL)
-SR = int(model.sr)  # sample rate definido pelo modelo
-print(f"[boot] modelo carregado em {time.time() - _t0:.1f}s | sr={SR}Hz", flush=True)
+try:
+    model = ChatterboxMultilingualTTS.from_pretrained(device=DEVICE, t3_model=T3_MODEL)
+    SR = int(model.sr)
+    print(f"[boot] modelo carregado em {time.time() - _t0:.1f}s | sr={SR}Hz", flush=True)
+except Exception as e:
+    print(f"[boot] ERRO no model load: {type(e).__name__}: {e}", flush=True, file=sys.stderr)
+    traceback.print_exc()
+    sys.stderr.flush()
+    sys.stdout.flush()
+    raise
 
 _ref_cache = {}  # sha256 -> path da ref no disco
 
