@@ -21,16 +21,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Chatterbox + RunPod handler.
 # IMPORTANTE: chatterbox-tts puxa transformers recente que importa torchvision
-# no path do LlamaModel. Se torch/torchvision/torchaudio ficarem desalinhados,
-# `register_fake("torchvision::nms")` falha no boot. Solucao: instala chatterbox
-# normalmente, depois FORÇA reinstall matched do trio torch=2.7.1/tv=0.22.1/ta=2.7.1
-# direto do index oficial PyTorch (cu128) — mesma versão da imagem base.
-RUN pip install --no-cache-dir \
+# no path do LlamaModel. Solucao: usa o mesmo pattern do omnivoice-worker
+# (--upgrade-strategy=only-if-needed) + reinstala SO torchvision matched
+# com torch da base. Force-reinstall do trio inteiro quebra silenciosamente
+# o runpod lib (workers ficam "idle" mas nunca pegam jobs).
+RUN pip install --no-cache-dir --upgrade-strategy=only-if-needed \
       runpod chatterbox-tts soundfile numpy huggingface_hub
 
 RUN pip install --no-cache-dir --force-reinstall --no-deps \
       --index-url https://download.pytorch.org/whl/cu128 \
-      torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1
+      torchvision==0.22.1
 
 # Pre-baixa pesos (cold start nao precisa baixar). Roda em CPU mode pra evitar
 # need de GPU no build host. Se falhar (modelo precisa CUDA), download cai no
