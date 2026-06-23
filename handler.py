@@ -57,7 +57,7 @@ def _get_ref_path(ref_audio_b64, ref_text):
     return path
 
 
-def handler(job):
+def _handler_impl(job):
     inp = job["input"]
     texts = inp["texts"]
     ref_audio_b64 = inp["ref_audio_b64"]
@@ -109,6 +109,22 @@ def handler(job):
         "rtf": round(gen_seconds / audio_seconds, 4) if audio_seconds else None,
         "model": f"chatterbox-multilingual-{T3_MODEL}",
     }
+
+
+def handler(job):
+    """Wrapper que captura QUALQUER exception e retorna no payload em vez de crashar.
+    Permite ver o erro mesmo sem acesso aos logs INFO do RunPod console."""
+    try:
+        return _handler_impl(job)
+    except Exception as e:
+        tb = traceback.format_exc()
+        print(f"[handler ERROR] {type(e).__name__}: {e}\n{tb}", flush=True, file=sys.stderr)
+        return {
+            "error": True,
+            "exception_type": type(e).__name__,
+            "exception_message": str(e),
+            "traceback": tb,
+        }
 
 
 runpod.serverless.start({"handler": handler})
